@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, request, session, url_for, flash
+from flask import Blueprint, render_template, redirect, request, session, url_for, flash, send_file
 import sqlite3, datetime
 from utils.excel_export import export_to_excel
 from utils.ai_attendance import get_low_attendance_students
@@ -17,7 +17,12 @@ def dashboard():
         return redirect(url_for('login.login'))
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM students")
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    cur.execute("""
+        SELECT s.*, a.status AS today_status 
+        FROM students s
+        LEFT JOIN attendance a ON s.roll_no = a.roll_no AND a.date = ?
+    """, (today,))
     students = cur.fetchall()
     low_attendance = get_low_attendance_students()
     return render_template('admin_dashboard.html', students=students, low_attendance=low_attendance)
@@ -34,9 +39,12 @@ def add_student():
         request.form['password']
     )
     conn = get_db()
-    conn.execute("INSERT INTO students (name, roll_no, department, mobile, password) VALUES (?, ?, ?, ?, ?)", data)
-    conn.commit()
-    flash("Student added successfully!")
+    try:
+        conn.execute("INSERT INTO students (name, roll_no, department, mobile, password) VALUES (?, ?, ?, ?, ?)", data)
+        conn.commit()
+        flash("Student added successfully!", "success")
+    except sqlite3.IntegrityError:
+        flash("Student with this Roll Number already exists!", "danger")
     return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/mark_attendance', methods=['POST'])
@@ -48,14 +56,28 @@ def mark_attendance():
     conn = get_db()
     cur = conn.cursor()
 
-    for roll_no in request.form.getlist('attendance'):
-        cur.execute("INSERT INTO attendance (roll_no, date, status) VALUES (?, ?, ?)", (roll_no, today, 'Present'))
+    # Clear today's previous records to allow updates and avoid duplication
+    cur.execute("DELETE FROM attendance WHERE date=?", (today,))
+
+    # Fetch all students to ensure everyone is accounted for
+    cur.execute("SELECT roll_no FROM students")
+    all_students = [row['roll_no'] for row in cur.fetchall()]
+    
+    present_students = request.form.getlist('attendance')
+
+    for roll_no in all_students:
+        status = 'Present' if roll_no in present_students else 'Absent'
+        cur.execute("INSERT INTO attendance (roll_no, date, status) VALUES (?, ?, ?)", (roll_no, today, status))
+
     conn.commit()
-    flash("Attendance marked successfully!")
+    flash("Attendance marked successfully!", "success")
     return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/export_excel')
 def export_excel():
     export_to_excel()
-    flash("Attendance exported to Excel!")
-    return redirect(url_for('admin.dashboard'))
+    return send_file(
+        "Attendance_Report.xlsx",
+        as_attachment=True,
+        download_name="Attendance_Report.xlsx"
+    )

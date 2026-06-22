@@ -1,0 +1,37 @@
+Step 1: Create the Virtual Environment
+Run the creation command for your respective operating system:
+Windows:
+python -m venv .venv
+
+macOS/Linux:
+python3 -m venv .venv
+
+
+Step 2: Activate the Environment
+You must activate the environment before installing packages.
+Windows (Command Prompt):
+.venv\Scripts\activate.bat
+
+Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+macOS/Linux (bash/zsh):
+source .venv/bin/activate
+
+macOS/Linux (fish):
+source .venv/bin/activate.fish
+
+
+Step 3: Install Dependencies
+Install the required packages from requirements.txt:
+pip install -r requirements.txt
+
+
+Step 4: Initialize the Database
+Run the setup script to initialize the SQLite database:
+python3 database/setup_db.py
+
+
+Step 5: Run the Flask Application
+Start the Flask development server:
+python3 app.py

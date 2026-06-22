@@ -25,6 +25,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS attendance (
 )""")
 
 cur.execute("INSERT OR IGNORE INTO admin (email, password) VALUES ('admin@gmail.com', 'admin123')")
+cur.execute("INSERT OR IGNORE INTO students (name, roll_no, department, mobile, password) VALUES ('Ashok', '713523AM009', 'AIMK', '7904271813', 'ashok123')")
 conn.commit()
 conn.close()
 print("✅ Database initialized successfully!")

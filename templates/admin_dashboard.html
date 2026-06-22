@@ -1,52 +1,136 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Smart AI Attendance</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <h2>Welcome, Admin</h2>
-  <a href="{{ url_for('login.logout') }}">Logout</a>
+  <div class="container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div>
+        <h2>Welcome, Admin Portal</h2>
+        <p>Manage students, track attendance, and analyze insights</p>
+      </div>
+      <a href="{{ url_for('login.logout') }}" class="logout-link">Logout</a>
+    </header>
 
-  <h3>Add Student</h3>
-  <form action="{{ url_for('admin.add_student') }}" method="POST">
-    <input type="text" name="name" placeholder="Student Name" required>
-    <input type="text" name="roll_no" placeholder="Roll Number" required>
-    <input type="text" name="department" placeholder="Department" required>
-    <input type="text" name="mobile" placeholder="Mobile Number" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <button type="submit">Add Student</button>
-  </form>
+    <!-- Flash Notifications -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash-message alert-{{ category if category else 'success' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-  <hr>
-  <h3>Mark Attendance (Today)</h3>
-  <form action="{{ url_for('admin.mark_attendance') }}" method="POST">
-    <table border="1" cellpadding="8">
-      <tr><th>Roll No</th><th>Name</th><th>Present</th></tr>
-      {% for s in students %}
-      <tr>
-        <td>{{ s['roll_no'] }}</td>
-        <td>{{ s['name'] }}</td>
-        <td><input type="checkbox" name="attendance" value="{{ s['roll_no'] }}"></td>
-      </tr>
-      {% endfor %}
-    </table>
-    <button type="submit">Submit Attendance</button>
-  </form>
+    <div class="admin-grid">
+      <!-- Sidebar - Add Student Form -->
+      <aside class="sidebar-panel">
+        <h3>Add New Student</h3>
+        <form action="{{ url_for('admin.add_student') }}" method="POST">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" name="name" id="name" placeholder="John Doe" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="roll_no">Roll Number</label>
+            <input type="text" name="roll_no" id="roll_no" placeholder="CS202601" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="department">Department</label>
+            <input type="text" name="department" id="department" placeholder="Computer Science" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="mobile">Mobile Number</label>
+            <input type="text" name="mobile" id="mobile" placeholder="+1234567890" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Portal Password</label>
+            <input type="password" name="password" id="password" placeholder="••••••••" required>
+          </div>
+          
+          <button type="submit" class="btn-primary">Add Student</button>
+        </form>
+      </aside>
 
-  <hr>
-  <h3>AI Insights — Low Attendance Students</h3>
-  {% if low_attendance %}
-    <ul>
-      {% for s in low_attendance %}
-        <li>{{ s[0] }} ({{ s[1] }}) — {{ "%.2f"|format(s[2]) }}%</li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>All students have good attendance! 🎉</p>
-  {% endif %}
+      <!-- Main Panel - Mark Attendance -->
+      <main>
+        <h3>Mark Attendance (Today)</h3>
+        {% if students %}
+          <form action="{{ url_for('admin.mark_attendance') }}" method="POST">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Roll No</th>
+                    <th>Name</th>
+                    <th style="text-align: center; width: 100px;">Present</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in students %}
+                    <tr>
+                      <td>{{ s['roll_no'] }}</td>
+                      <td><strong>{{ s['name'] }}</strong></td>
+                      <td style="text-align: center;">
+                        <input type="checkbox" name="attendance" value="{{ s['roll_no'] }}" {% if s['today_status'] == 'Present' %}checked{% endif %}>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <button type="submit" class="btn-primary" style="align-self: flex-start;">Submit Attendance</button>
+          </form>
+        {% else %}
+          <p style="padding: 2rem 0; text-align: center; color: var(--text-muted);">
+            No students registered yet. Use the sidebar to add students.
+          </p>
+        {% endif %}
+      </main>
+    </div>
 
-  <hr>
-  <a href="{{ url_for('admin.export_excel') }}">📊 Export to Excel</a>
+    <hr>
+
+    <!-- AI Insights Section -->
+    <section>
+      <h3>AI Insights — Low Attendance Students (&lt; 75%)</h3>
+      {% if low_attendance %}
+        <ul class="insights-list">
+          {% for s in low_attendance %}
+            <li class="insight-item">
+              <div class="student-info">
+                <span class="student-name">{{ s[0] }}</span>
+                <span class="student-roll">Roll No: {{ s[1] }}</span>
+              </div>
+              <span class="percentage-badge">{{ "%.2f"|format(s[2]) }}%</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p style="color: var(--success-color); font-weight: 500; display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+          All students have good attendance records (75%+)! 🎉
+        </p>
+      {% endif %}
+    </section>
+
+    <hr>
+
+    <!-- Export Footer -->
+    <footer class="export-card">
+      <a href="{{ url_for('admin.export_excel') }}" class="btn btn-secondary">
+        📊 Export Attendance Report to Excel
+      </a>
+    </footer>
+  </div>
 </body>
 </html>
