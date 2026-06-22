@@ -35,3 +35,14 @@ python3 database/setup_db.py
 Step 5: Run the Flask Application
 Start the Flask development server:
 python3 app.py
+
+
+1. Admin Login Credentials
+Role: Admin
+Username (Email): admin@gmail.com
+Password: admin123
+
+2. Student Login Credentials
+Role: Student
+Username (Roll No): 713523AM009
+Password: ashok123
